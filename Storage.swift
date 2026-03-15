@@ -93,17 +93,17 @@ struct GLMUsageResponse: Codable {
 }
 
 struct GLMUsageData: Codable {
-    let limits: [GLMLimit]
-    let level: String
+    let limits: [GLMLimit]?
+    let level: String?
 }
 
 struct GLMLimit: Codable, Identifiable {
-    var id: String { "\(type)_\(unit)_\(number)" }
-    let type: String
-    let unit: Int
-    let number: Int
-    let percentage: Int
-    let nextResetTime: Int64
+    var id: String { "\(type ?? "unknown")_\(unit ?? 0)_\(number ?? 0)" }
+    let type: String?
+    let unit: Int?
+    let number: Int?
+    let percentage: Int?
+    let nextResetTime: Int64?
     let usage: Int?
     let remaining: Int?
     
@@ -115,8 +115,9 @@ struct GLMLimit: Codable, Identifiable {
         default: return "\(type) (\(unit))"
         }
     }
-    var usagePercent: Double { Double(percentage) / 100.0 }
+    var usagePercent: Double { Double(percentage ?? 0) / 100.0 }
     var resetTimeSeconds: Int? {
+        guard let nextResetTime = nextResetTime else { return nil }
         let now = Int64(Date().timeIntervalSince1970 * 1000)
         let diff = nextResetTime - now
         return diff > 0 ? Int(diff / 1000) : nil
