@@ -21,6 +21,7 @@ A lightweight and powerful macOS menu bar application to monitor your **Zhipu AI
   - 🟢 Slow: Slow usage - safe margin
 - **Dark Mode Support**: Auto/Light/Dark theme selection
 - **Official Z.ai Logo**: Uses official Zhipu AI branding
+- **Automatic App Updates (Sparkle)**: `GLMBar.app` supports in-app update checks and automatic update preference.
 - **Privacy Focused**: Your API Key is NOT stored in the source code; it's kept locally and securely on your Mac using `UserDefaults`.
 - **Launch at Login**: Option to automatically start the app when you log in.
 - **Native Performance**: Built with Swift/SwiftUI for extremely low CPU and memory footprint.
@@ -37,6 +38,8 @@ The easiest way to use the app. Works like any other macOS application.
 1. Download `glm-bar-macos.tar.gz` from the Releases page.
 2. Extract and run via terminal: `chmod +x glm-bar && ./glm-bar &`
 
+The terminal binary is manual-update only. Automatic updates apply only to `GLMBar.app`.
+
 ### 3. Build from Source
 If you prefer to build it yourself, run the following in your terminal:
 
@@ -50,6 +53,29 @@ This creates a **Universal Binary** (works on both Intel and Apple Silicon Macs)
 - `dist/glm-bar-macos.tar.gz` - Release archive (terminal binary)
 - `dist/GLMBar.zip` - Release archive (app bundle)
 
+### 4. Release Preflight Contract (Local + CI)
+Before a release build, run:
+
+```bash
+./scripts/check-release-prereqs.sh
+```
+
+Required environment variables:
+- `APPLE_ID`
+- `APPLE_APP_SPECIFIC_PASSWORD`
+- `APPLE_TEAM_ID`
+- `APPLE_DEVELOPER_ID_APPLICATION`
+- `SPARKLE_PRIVATE_KEY`
+- `SPARKLE_PUBLIC_KEY`
+
+Release builds also require explicit version inputs from one source:
+
+```bash
+RELEASE_BUILD=1 RELEASE_VERSION=1.2.3 RELEASE_BUILD_NUMBER=123 ./scripts/build-universal.sh
+```
+
+Notary profile contract name: `glmbar-notary` (override with `NOTARY_PROFILE_NAME` only if needed).
+
 **Requirements:** macOS 11.0 (Big Sur) or later
 
 To run the terminal binary:
@@ -61,6 +87,16 @@ To install the app bundle:
 ```bash
 cp -r dist/GLMBar.app /Applications/
 ```
+
+## 🔄 Automatic Updates (App Only)
+
+`GLMBar.app` uses Sparkle for in-app updates.
+
+- Manual check: open app popup -> `Check for Updates...`
+- Automatic behavior: open app popup -> `Settings...` -> toggle `Automatic Updates`
+- Feed URL: `https://uwseoul.github.io/glm-bar/appcast.xml`
+
+`glm-bar` CLI binary does not use Sparkle and must be updated manually from Releases.
 
 ## ⚙️ How to Setup
 1. Click the menu bar icon to open the popup.
