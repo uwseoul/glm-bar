@@ -13,6 +13,9 @@ TERMINAL_BINARY="$DIST_DIR/glm-bar"
 APP_BUNDLE="$DIST_DIR/GLMBar.app"
 APP_BINARY="$APP_BUNDLE/Contents/MacOS/GLMBar"
 APP_INFO_PLIST="$APP_BUNDLE/Contents/Info.plist"
+APP_FRAMEWORKS_DIR="$APP_BUNDLE/Contents/Frameworks"
+SPARKLE_FRAMEWORK="$APP_FRAMEWORKS_DIR/Sparkle.framework"
+SPARKLE_FRAMEWORK_BINARY="$SPARKLE_FRAMEWORK/Versions/Current/Sparkle"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -140,11 +143,64 @@ if [[ -f "$APP_INFO_PLIST" ]]; then
     else
         check_fail "LSMinimumSystemVersion is missing"
     fi
+
+    auto_update_flag=$(defaults read "$APP_INFO_PLIST" SUAllowsAutomaticUpdates 2>/dev/null || true)
+    if [[ "$auto_update_flag" == "1" ]] || [[ "$auto_update_flag" == "true" ]] || [[ "$auto_update_flag" == "True" ]]; then
+        check_pass "SUAllowsAutomaticUpdates = true"
+    else
+        check_fail "SUAllowsAutomaticUpdates should be true, got: '$auto_update_flag'"
+    fi
+
+    sparkle_feed=$(defaults read "$APP_INFO_PLIST" SUFeedURL 2>/dev/null || true)
+    if [[ "$sparkle_feed" == "https://uwseoul.github.io/glm-bar/appcast.xml" ]]; then
+        check_pass "SUFeedURL = https://uwseoul.github.io/glm-bar/appcast.xml"
+    else
+        check_fail "SUFeedURL should be 'https://uwseoul.github.io/glm-bar/appcast.xml', got: '$sparkle_feed'"
+    fi
+
+    sparkle_key=$(defaults read "$APP_INFO_PLIST" SUPublicEDKey 2>/dev/null || true)
+    if [[ -n "$sparkle_key" ]]; then
+        check_pass "SUPublicEDKey is present"
+        check_info "SUPublicEDKey length: ${#sparkle_key}"
+    else
+        check_fail "SUPublicEDKey is missing or empty"
+    fi
 fi
 
-# =============================================================================
-# Check 6: file command reports Mach-O universal
-# =============================================================================
+if [[ -d "$APP_FRAMEWORKS_DIR" ]]; then
+    check_pass "App Frameworks directory exists: $APP_FRAMEWORKS_DIR"
+else
+    check_fail "App Frameworks directory missing: $APP_FRAMEWORKS_DIR"
+fi
+
+if [[ -d "$SPARKLE_FRAMEWORK" ]]; then
+    check_pass "Sparkle framework exists: $SPARKLE_FRAMEWORK"
+else
+    check_fail "Sparkle framework missing: $SPARKLE_FRAMEWORK"
+fi
+
+if [[ -f "$SPARKLE_FRAMEWORK_BINARY" ]]; then
+    check_pass "Sparkle binary exists: $SPARKLE_FRAMEWORK_BINARY"
+else
+    check_fail "Sparkle binary missing: $SPARKLE_FRAMEWORK_BINARY"
+fi
+
+if [[ -d "$SPARKLE_FRAMEWORK" ]]; then
+    if codesign --verify --verbose=3 --strict "$SPARKLE_FRAMEWORK" >/dev/null 2>&1; then
+        check_pass "Sparkle framework signature is valid"
+    else
+        check_fail "Sparkle framework signature is invalid"
+    fi
+fi
+
+if [[ -d "$APP_BUNDLE" ]]; then
+    if codesign -vvv --deep --strict "$APP_BUNDLE" >/dev/null 2>&1; then
+        check_pass "App bundle passes codesign -vvv --deep --strict"
+    else
+        check_fail "App bundle failed codesign -vvv --deep --strict"
+    fi
+fi
+
 if [[ -f "$TERMINAL_BINARY" ]]; then
     file_info=$(file "$TERMINAL_BINARY")
     if echo "$file_info" | grep -q "Mach-O universal binary"; then
